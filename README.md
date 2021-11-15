@@ -1,4 +1,5 @@
 # CEN Projects
+The purpose of this group is to share code files of different projects in progress at CEN. 
 
 # Permafrost Data in Nunavik Web Platform - Landslide Risk Monitoring Program
 
