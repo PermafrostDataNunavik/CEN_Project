@@ -5,6 +5,7 @@ Created on Mon May 31 10:36:13 2021
 sarah.gauthier.1@ulaval.ca
 Centre d'études nordiques, Université Laval
 
+
 Module pour la détermination des dates de début des saisons de gel et de dégel 
 pour calculer les indices climatiques en fonction des années climatiques.
 
@@ -26,6 +27,13 @@ Station SALLUIT SILA
     Latitude :       62.1918
     Longitude :     -75.6379
     Altitude :       42 m
+
+# =============================================================================
+#  CE MODULE EST EN DÉVELOPPEMENT ET DOIT ÊTRE ADAPTÉ EN FONCTION DE LA STATION 
+#  DE SUIVI (CLIMATIQUE, THERMIQUE, ETC.) DONT LES DONNÉES DOIVENT ÊTRE 
+#  RÉCUPÉRÉES ET AUSSI DU TYPE DE DONNÉES À TRAITER. 
+# =============================================================================
+
 """
 
 # Importation des modules
@@ -35,13 +43,12 @@ from pandas.tseries.offsets import MonthEnd
 from colorama import Fore, Style
 import numpy as np
 from signal_risque_glissement import AlerteRisqueCourriel
-import easygui
 
 class IndicesClimatiques:
     
     def __init__(self, df_sila, repertoire):
         """
-        Création des tableaux de données à partir des fichiers sur le disque local. 
+        Création des tableau de données à partir des fichiers sur le disque local. 
 
         df_sila (DataFrame) : Tableau de données mis en forme avec la température de l'air et 
                               le cumul de degrés-jours selon la saison de gel et de dégel.
@@ -53,8 +60,10 @@ class IndicesClimatiques:
         nouvelles_données (DataFrame) : Tableau de données avec les dates de débuts de saisons de gel 
                                         et de dégel et avec les indices climatiques calculées à partir
                                         de ces dates.
+        saison_degel (bool) : Vérifie si le programme est actuellement en saison de gel ou de dégel.
+        
         """
-        # Chemin absolu de l'emplacement du programme et des fichiers nécessaires à l'exécution
+        # Chemin absolue de l'emplacement du programme et des fichiers nécessaires à l'exécution
         self.repertoire = repertoire
         
         # Définir l'emplacement des fichiers
@@ -74,22 +83,21 @@ class IndicesClimatiques:
         self.df_indices_clim['FinGel'] = pd.to_datetime(self.df_indices_clim['FinGel'])
         self.df_indices_clim['FinDegel'] = pd.to_datetime(self.df_indices_clim['FinDegel'])
         
+        # Dates de la saison en cours
         self.date_gel = self.df_indices_clim['DateGel'].iloc[-1]
         self.fin_gel = self.df_indices_clim['FinGel'].iloc[-1]
         self.date_degel = self.df_indices_clim['DateDegel'].iloc[-1]
         self.fin_degel = self.df_indices_clim['FinDegel'].iloc[-1]
         
-# =============================================================================
-#         if pd.isnull(date_degel) and pd.isnull(fin_degel) and pd.isnull(fin_gel):
-#             self.saison = 'Gel'
-#         
-#         else:
-#             self.saison = 'Degel'
-# =============================================================================
+        # Déterminer quelle saison est en cours
+        if not pd.isnull(self.date_degel):
+            self.saison = 'Degel'
+        else:
+            self.saison = 'Gel'
         
     def calcul_indices(self, gel, degel):
         """
-        Appel aux différentes méthodes de la classe pour le calcul des indices climatiques
+        Appel aux différentes méthode de la classe pour le calcul des indices climatiques
         pour chaque saison.
         """
         
@@ -101,7 +109,7 @@ class IndicesClimatiques:
         self.serie_saisons(gel)
         self.serie_saisons(degel)
     
-        # Calcul des moyennes mobiles et création de la colonne dans le dataframe principal
+        # Calcul des moyennes mobile et création de la colonne dans le dataframe principal
         self.annee_climatique(gel)
         self.annee_climatique(degel)
     
@@ -112,11 +120,6 @@ class IndicesClimatiques:
         if not pd.isnull(self.date_degel) and pd.isnull(self.fin_degel) :
             self.cumul_quotidien(degel)
             self.variation_cumul()
-        
-            # Classe pour déterminer si le niveau de risque nécessite d'envoyer une alerte
-            destinataires = ['sarah.gauthier.1@ulaval.ca'] #'landuse@krg.ca', Liste de destinataire du signal d'alerte. Ajouter des adresses courriel au besoin
-            alerte = AlerteRisqueCourriel(destinataires, repertoire) # Argument en entrée : à qui envoyer l'alerte
-            alerte.generer_rapports()
         
         print(self.df_sila[['Date', 'Nom_Mois', 'CUMUL_DJ']].tail(), end = '\n\n')
     
@@ -206,7 +209,7 @@ class IndicesClimatiques:
         Température moyenne de l'air annuelle selon les années climatiques.
         Return
         -------
-            moyenne_annuelle (float) La moyenne annuelle de l'année climatique. 
+            moyenne_annuelle (float) La moyenne annuelle de l'année climatiques. 
         """
         
         debut = self.df_indices_clim['DateGel'].iloc[-1]
@@ -249,7 +252,7 @@ class IndicesClimatiques:
             # Trouver l'année climatique en question
             df.loc[0,'Annee_Clim'] = df_annee['Annee_Clim'].unique()[0]
             
-            # Compte le nombre de jours avec une température supérieure à 0 °C
+            # Compte le nombre de jours avec une température supérieur à 0 °C
             df.loc[0,'Nb_Jours'] = df_annee['SILA'].loc[df_annee['SILA'] > 0].count()
             
             nb_jours = nb_jours.append(df)
@@ -258,6 +261,7 @@ class IndicesClimatiques:
         
         # Nombre de jours > 0°C pour l'année en jours
         nb_jours_quotidien = nb_jours['Nb_Jours'].iloc[-1]
+        
         return nb_jours_quotidien
         
         # Décommenter pour avoir le nombre de jour > 0 °C pour toutes les années + commentez deux lignes ci-haut
@@ -292,7 +296,7 @@ class IndicesClimatiques:
     # =============================================================================
         if saison == 'Gel':
             
-            # S’il s'agit d'une nouvelle saison
+            # Si il s'agit d'une nouvelle saison
             if saison_debut != date_fichier:
                 
                 # Ajouter une ligne vide à remplir avec les nouvelles valeurs
@@ -376,8 +380,8 @@ class IndicesClimatiques:
                 annee = annees[1]
                 
             if saison == 'Gel':
-                if pd.isnull(fin_degel):         # On vérifie si la saison n'est pas terminée.
-                    annee = annees[1]            # Sinon, on vérifie si la nouvelle année est commencée
+                if pd.isnull(fin_degel):         # On vérifie si la saison n'est pas terminé
+                    annee = annees[1]            # Si non, on vérifie si la nouvelle année est commencé
                 else:     
                     annee = annees[0]
     
@@ -402,7 +406,7 @@ class IndicesClimatiques:
                 # Calcul de la moyenne mobile avec une fenêtre de 9 jours, pendant 10 jours
                 df_moyenne['Moy_Mobile_9'] = self.df_sila['SILA'].loc[:].rolling(window=9, min_periods=3).mean()
                 
-    # Tant que les critères pour déterminer la date de début de la saison ne sont pas satisfaits...
+    # Tant que les critères pour déterminer la date de début de la saison ne sont pas rencontrés...
     # =============================================================================
                 moyenne_terminee = False
                 
@@ -445,7 +449,7 @@ class IndicesClimatiques:
                         if saison == 'Degel':
                             saison_debut = df_moyenne['Date'].loc[(df_moyenne['SILA'] > 0) & (df_moyenne['Debut_Serie'] == True)].iloc[0]
                                             
-                        # Les critères sont satisfaits et nous avons la date de début. On sort donc de la boucle.
+                        # Les critères sont rencontrés et nous avons la date de début. On sort donc de la boucle.
                         moyenne_terminee = True
     # =============================================================================
 
@@ -458,7 +462,7 @@ class IndicesClimatiques:
     def serie_saisons(self, saison): 
         """
         Fonction pour identifier le nombre de jours successifs où la température est 
-        supérieure à 0 °C pour la saison de dégel et inférieure à 0 °C pour la saison de gel. 
+        supérieur à 0 °C pour la saison de dégel et inférieur à 0 °C pour la saison de gel. 
         Ces séries permettront de déterminer la date de début des saisons. 
     
         Parameters
@@ -477,14 +481,14 @@ class IndicesClimatiques:
                 # Les valeurs doivent être dans les mois potentiels de début de la saison de dégel
                 mois = self.df_sila['Nom_Mois'].str.contains('Avril|Mai|Juin')
                 
-                # Température inférieure à 0°C
+                # Température inférieur à 0° C
                 c1 = self.df_sila['SILA'] > 0
                 
             if saison == 'Gel':
                 # Les valeurs doivent être dans les mois potentiels de début de la saison de gel
                 mois = self.df_sila['Nom_Mois'].str.contains('Septembre|Octobre|Novembre')
                 
-                # Température inférieure à 0°C
+                # Température inférieur à 0° C
                 c1 = self.df_sila['SILA'] < 0
             
             # Calcul le cumul des jours successifs qui ne respecte pas le critère c1
@@ -493,10 +497,10 @@ class IndicesClimatiques:
             # Début de chaque série supérieur à 0 si dégel et inférieur à 0 si gel.
             self.df_sila['Debut_Serie'] = c1.ne(c1.shift())
         
-            # Compte le nombre d'occurrences dans chaque série
+            # Commpte le nombre d'occurence dans chaque série
             self.df_sila[saison] =  self.df_sila.groupby(g).Date.transform('count')
         
-            # Cherche le nombre d'occurrences par série pour les mois de ciblés
+            # Cherche le nombre d'occurence par série pour les mois de ciblés
             self.df_sila[saison] = self.df_sila[saison].where(c1 & mois & annee_clim)
             debut = self.df_sila['Debut_Serie'] == True
             
@@ -520,13 +524,13 @@ class IndicesClimatiques:
         
         try: 
             
-            # Variable annee et annee_2 correspondent aux années de données disponibles dans le fichier pour lesquelles
+            # Variable annee et annee_2 correspondent aux années de données disponible dans le fichier pour lesquelles
             # il faut calculer le cumul de degrés-jours
             df_saison = pd.DataFrame(columns = ['Jour_Mois', 'Nom_Mois'])
             
-            # Pour chaque année dans le fichier de données
+            # Pour chaque années dans le fichier de données
             for i in range(0, (len(self.df_indices_clim))):
-                # Établir l’étendue de date des colonnes
+                # Établir le range de date des colonnes
                 
                 annee_clim = self.df_indices_clim['Annee_Clim'].iloc[i]
                 annee_1 = annee_clim[0:4]
@@ -560,13 +564,13 @@ class IndicesClimatiques:
                 # Récupérer la somme des degrés-jours et l'ajouter dans le fichier synthèse de saisons 
                 self.df_indices_clim.loc[i, 'Total'+saison] = cumul['CUMUL_DJ'].iloc[-1]
                 
-                # Mettre le bon titre de colonne avec l'année climatique et la range de date 
+                # Mettre le bon titre de colonne avec l'année climatique et le range de date 
     # =============================================================================
     #             cumul = cumul.rename(columns = {'CUMUL_DJ': annee_clim})
     # =============================================================================
                 cumul = cumul.set_index('Date').reindex(date_range).rename_axis('Date').reset_index()
         
-                # Format des dates et création de la colonne Jour_Mois pour des fins de comparaison interannuelle
+                # Format des dates et création de la colonne Jour_Mois pour des fins de comparaison inter-annuelle
                 cumul['Date'] = pd.to_datetime(cumul['Date'])
                 cumul['Nom_Mois'] = cumul['Date'].dt.month_name(locale = 'French')
                 cumul['Jour_Mois'] = cumul['Date'].dt.strftime('%d-%m')
@@ -593,7 +597,7 @@ class IndicesClimatiques:
             
             return df_saison
         
-        # Intercepte l'erreur si l'année n'est pas encore terminée et que la valeur n'est pas disponible
+        # Intercepte l'erreur si l'années n'est pas encore terminée et que la valeur n'est pas disponible
         except IndexError: 
             print(f'Valeur non disponible pour la saison de {saison} {annee_clim}.', end = '\n\n')
             return df_saison
@@ -602,7 +606,7 @@ class IndicesClimatiques:
         """
         Ajoute les nouvelles données et met en forme le data_frame 
         de données de température de l'air de la station SILA à Salluit. 
-            - Ordonne les dates;
+            - Ordonne les date;
             - Supprime les données dupliquées;
             - Comble les trous;
             - Réinitialise l'index;
@@ -707,16 +711,16 @@ class IndicesClimatiques:
                 print(f'Écriture terminée. Données disponible dans les fichiers {self.fichier_sila} et {self.fichier_saisons}.', end = '\n\n')
     
             else:
-                print(Fore.CYAN  + 'Aucune nouvelle donnée à écrire.'+ Style.RESET_ALL, end = '\n\n')            
+                print(Fore.CYAN  + 'Aucune nouvelles données à écrire.'+ Style.RESET_ALL, end = '\n\n')            
             
         except NameError:
-            print('NameError Nom du fichier incorrecte.Entrez un autre nom en argument ou vérifiez le répertoire.')
+            print('NameError Nom du fichier incorrecte.Entrez un autre nom en argument ou vérifier le répertoire.')
                 
         except FileNotFoundError:
-            print('FileNotFoundError Fichier introuvable. Essayez un autre nom ou vérifiez dans le répertoire.')
+            print('FileNotFoundError Fichier introuvable. Essayez un autre nom ou vérifier dans le répertoire.')
             
         except OSError:
-            print('OSError Fichier introuvable. Essayez un autre nom ou vérifiez dans le répertoire.')
+            print('OSError Fichier introuvable. Essayez un autre nom ou vérifier dans le répertoire.')
     
     def back_up_fichiers(self):
         try:
@@ -736,30 +740,23 @@ class IndicesClimatiques:
                 print('Écriture du fichier Excel de back up.')
               
         except NameError:
-            print('Fichier Backup : NameError Nom du fichier incorrecte.Entrez un autre nom en argument ou vérifiez le répertoire.')
+            print('Fichier Backup : NameError Nom du fichier incorrecte.Entrez un autre nom en argument ou vérifier le répertoire.')
 
         except FileNotFoundError:
-            print('Fichier Backup : FileNotFoundError Fichier introuvable. Essayez un autre nom ou vérifiez dans le répertoire.')
+            print('Fichier Backup : FileNotFoundError Fichier introuvable. Essayez un autre nom ou vérifier dans le répertoire.')
             
         except OSError:
-            print('Fichier Backup : OSError Fichier introuvable. Essayez un autre nom ou vérifiez dans le répertoire.')
-     
+            print('Fichier Backup : OSError Fichier introuvable. Essayez un autre nom ou vérifier dans le répertoire.')
+
+            
 if __name__ == '__main__':
     
     repertoire = input('Entrez le nom du répertoire de travail : ')
-   
-    fichier_sila = easygui.fileopenbox()
+    fichier_sol = ''
     
-    # Si fichier Excel : 
     df_sila  = pd.read_excel(fichier_sol, engine = 'openpyxl')
-    
-    # Si fichier csv
 # =============================================================================
 #     df_sila = pd.read_csv(fichier_sol)
 # ===================================
     
     indices = IndicesClimatiques(df_sila, repertoire)
-    
-
-
-

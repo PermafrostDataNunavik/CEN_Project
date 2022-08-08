@@ -7,10 +7,18 @@ Created on Mon Feb 15 09:06:40 2021
 sarah.gauthier.1@ulaval.ca
 Centre d'études nordiques, Université Laval
 
-Contiens les méthodes pour la validation des données brutes pour une station 
-de suivi thermique du pergélisol. 
+Contiens les méthodes pour la validation des données brutes de température du sol 
+et de température de l'air. 
 
-Critères basés sur ceux de la base de données SILA du Centre d'études nordiques (CEN), Université Laval.
+Critères basés sur ceux de la base de données SILA du Centre d'études nordiques (CEN), 
+Université Laval.
+
+# =============================================================================
+#  CE MODULE EST EN DÉVELOPPEMENT ET DOIT ÊTRE ADAPTÉ EN FONCTION DE LA STATION 
+#  DE SUIVI (CLIMATIQUE, THERMIQUE, ETC.) DONT LES DONNÉES DOIVENT ÊTRE 
+#  RÉCUPÉRÉES ET AUSSI DU TYPE DE DONNÉES À TRAITER. 
+# =============================================================================
+
 """
 # Importation des modules nécessaires 
 import datetime
@@ -191,7 +199,6 @@ class ValidationDonnees():
     def filtre_amplitude(self):
         """
         Calculer l'amplitude entre les valeurs de chaque profondeur avec la ligne suivante
-
         """
         
         if self.station == 'Station GN' or self.station == 'Station GS':
@@ -454,13 +461,15 @@ class ValidationDonnees():
         
 if __name__ == '__main__':
 
-    data_frame = 
-    profondeur = 
-    station = 
-    conversion = True
-
-
-    validation = ValidationDonnees(station.serveur, station.profondeur, id_station, 'Heures')
+    ### DÉCOMMENTER POUR LANCER LE MODULE ###
+# =============================================================================
+#     data_frame = 
+#     profondeur =
+#     station = 
+# =============================================================================
+# =============================================================================
+#     validation = ValidationDonnees(station.serveur, station.profondeur, id_station, 'Heures')
+# =============================================================================
 # =============================================================================
 #     validation.conversion_donnees()
 # =============================================================================

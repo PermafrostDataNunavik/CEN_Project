@@ -10,6 +10,12 @@ Classe pour la création d'un rapport journalier avec le statut de transmission
 des stations (active ou inactive) et pour l'envoi du signal d'alerte au besoin 
 à la personne contact choisi. 
 
+# =============================================================================
+#  CE MODULE EST EN DÉVELOPPEMENT ET DOIT ÊTRE ADAPTÉ EN FONCTION DE LA STATION 
+#  DE SUIVI (CLIMATIQUE, THERMIQUE, ETC.) DONT LES DONNÉES DOIVENT ÊTRE 
+#  RÉCUPÉRÉES ET AUSSI DU TYPE DE DONNÉES À TRAITER. 
+# =============================================================================
+
 """
 
 from fpdf import FPDF
@@ -43,8 +49,6 @@ class AlerteRisqueCourriel():
         # Fichers de données
         self.df_indices_clim = pd.read_csv(f'{self.repertoire}Station_Data/CEN_SILA/Synthese_saisons_programme.csv')
         self.df_sila = pd.read_csv(f'{self.repertoire}Station_Data/CEN_SILA/SILA_Salluit_AirTemp.csv')
-        self.gn = pd.read_csv(f'{self.repertoire}Station_Data/GN/GN_jours_2006_2021.csv')
-        self.gs = pd.read_csv(f'{self.repertoire}Station_Data/GS/GS_jours_2006_2020.csv')
         
         # Lecture du fichier avec le statut d'envoi de la préalerte
         self.fichier_statut_prealerte = f'{self.repertoire}Rapport_PDF/statut_courriel_prealerte.txt'
@@ -58,9 +62,7 @@ class AlerteRisqueCourriel():
         self.statut_alerte = lecture_alerte.readline()
         lecture_alerte.close()  # Fermeture du fichier pour pouvoir réécrire le nouveau statut
         
-        
         # Rapports PDF
-        self.rapport_statut_stations = f'{self.repertoire}Rapport_PDF/rapport_transmission_données.pdf'
         self.rapport_niveau_risque = f'{self.repertoire}Rapport_PDF/risque_glissement_salluit.pdf'
     
         # Variable à publier dans le rapport
@@ -85,16 +87,15 @@ class AlerteRisqueCourriel():
         pdf et envoyer par courriel s'il y a un risque de glissement de terrain. 
         """
         
-        if pd.isnull(self.niveau_risque):
-            print('Saison de dégel terminée, le suivi du niveau de risque n\'est pas nécessaire')
-            self.rapport_transmission_donnees()
+        # Création des graphiques avec les données des 14 derniers jours
+        self.graphiques(self.graphique_tair)
+        self.graphiques(self.graphique_cumuldjd)
+        
+        # Rapport avec le niveau de risque, les indices climatiques et les graphiques
+        self.rapport_risque_glissement()
 
-        else:
-            self.rapport_transmission_donnees()
-            self.rapport_risque_glissement()
-            
-            # Méthode pour évaluer le niveau de risque de glissement et envoyer une alerte au besoin
-            self.niveau_risque_glissement()
+        # Méthode pour évaluer le niveau de risque de glissement et envoyer une alerte au besoin
+        self.alerte_risque_glissement()
         
     def titre(self, pdf, risque = False):
         """
@@ -117,28 +118,6 @@ class AlerteRisqueCourriel():
         
         # Retourne le PDF avec l'entête
         return pdf
-    
-    def rapport_transmission_donnees(self):
-        """
-        Création du rapport avec les statuts de transmission de chaque station. 
-        """
-        
-        # Date d'aujourd'hui
-        print('\n\n', f'Production des rapports en date du {self.date}...')
-       
-        # Première page
-        self.pdf.add_page()
-    
-        self.pdf.image(self.logo_cen, 10, 5, 210/10)
-    
-        # Création de l'entête
-        self.titre(self.pdf)
-        
-        self.station_sila()
-        self.station_gn()
-        self.station_gs()
-
-        self.ecrire_pdf(self.pdf, self.rapport_statut_stations)
     
     def statut_station(self, df, station):
         """
@@ -163,73 +142,79 @@ class AlerteRisqueCourriel():
     def station_sila(self):
         
         station = 'SILA'
-        
         statut = self.statut_station(self.df_sila, station)
-        
         donnees = self.df_sila.iloc[-5:, 0:10]
-        
         dfi.export(donnees, f'{self.repertoire}Rapport_PDF/Tableau_donnees/{station}.png')
         
-        self.pdf.set_font('Arial', 'B', 14)
-        self.pdf.cell(40, 10, station, ln = 20)
+        self.pdf_risque.set_font('Arial', 'B', 14)
         
-        self.pdf.set_font('Arial', 'I', 11)
-        self.pdf.cell(40, 10, statut, ln = 20)
-        
-        self.pdf.image(f'{self.repertoire}Rapport_PDF/Tableau_donnees/{station}.png', 10, 80, 210/2)
-
-    def station_gn(self):
-        
-        station = 'GN'
-        
-        statut = self.statut_station(self.gn, station)
-        
-        donnees = self.gn.iloc[-5:, 0:12]
-        
-        dfi.export(donnees, f'{self.repertoire}Rapport_PDF/Tableau_donnees/{station}.png')
-        
-        self.pdf.ln(40)
-        self.pdf.set_font('Arial', 'B', 14)
-        self.pdf.cell(40, 10, station, ln = 20)
-        
-        self.pdf.set_font('Arial', 'I', 11)
-        self.pdf.cell(40, 10, statut, ln = 20)
-        
-        self.pdf.image(f'{self.repertoire}Rapport_PDF/Tableau_donnees/{station}.png', 10, 140, 160)
-    
-    def station_gs(self):
-        
-        station = 'GS'
-        
-        statut = self.statut_station(self.gs, station)
-        
-        donnees = self.gs.iloc[-5:, 0:12]
-        
-        dfi.export(donnees, f'{self.repertoire}Rapport_PDF/Tableau_donnees/{station}.png')
-        
-        self.pdf.ln(40)
-        self.pdf.set_font('Arial', 'B', 14)
-        self.pdf.cell(40, 10, station, ln = 20)
-        
-        self.pdf.set_font('Arial', 'I', 11)
-        self.pdf.cell(40, 10, statut, ln = 20)
-        
-        self.pdf.image(f'{self.repertoire}Rapport_PDF/Tableau_donnees/{station}.png', 10, 200, 160)
-
-    def rapport_risque_glissement(self):
-        
-        self.pdf_risque = FPDF(format = 'Letter')
-        
-        # Première page
         self.pdf_risque.add_page()
         self.pdf_risque.image(self.logo_cen, 10, 5, 210/10)
+        self.titre(self.pdf_risque)
         
-        # Ajout de l'entête avec la date
+        self.pdf_risque.cell(40, 10, station, ln = 20)
+        
+        self.pdf_risque.set_font('Arial', 'I', 11)
+        self.pdf_risque.cell(40, 10, statut, ln = 20)
+        
+        self.pdf_risque.image(f'{self.repertoire}Rapport_PDF/Tableau_donnees/{station}.png', 10, 80, 160)
+        
+    def graphiques(self, graphique):
+        """
+        Création des graphiques à mettre dans les rapports.
+        ----------
+        graphique (str) : Nom du fichier du graphique à enregistrer
+        """
+        
+        idx = self.df_sila.index[-14:].tolist()
+        date = self.df_sila.Date[-14:].tolist()
+        
+        if graphique == self.graphique_tair:
+            
+            self.df_sila.SILA[-14:].plot.line(color = 'black', marker = '.', markersize=10, markerfacecolor='white')
+            plt.rcParams["font.family"] = 'arial'
+            plt.title('Température de l\'air (°C) - Salluit SILA')
+            plt.ylabel('TMJA (°C)')
+            plt.xticks(idx, date)
+            plt.xticks(rotation=90)
+            plt.grid(linestyle=':', linewidth=1)
+            plt.tight_layout()
+            
+            plt.savefig(graphique)
+            plt.clf()
+
+        if graphique == self.graphique_cumuldjd:
+            
+            self.df_sila.CUMUL_DJ[-14:].plot.line(color = 'black', marker = '.', markersize=10, markerfacecolor='white')
+            plt.rcParams["font.family"] = 'arial'
+            plt.title('Cumul degrés-jour de dégel - Salluit SILA') 
+            plt.ylabel('DJD (°C)')
+            # plt.xticks(mois_gel, nom_gel)
+            plt.xticks(idx, date)
+            plt.xticks(rotation=90)
+            plt.grid(linestyle=':', linewidth=1)
+            # plt.ylim(0, 4000)
+            plt.tight_layout()
+            
+            plt.savefig(graphique)
+            plt.clf()
+            
+    def rapport_risque_glissement(self):
+        
+        # Création d'un PDF format lettre
+        self.pdf_risque = FPDF(format = 'Letter')
+        
+# =============================================================================
+#         # PREMIÈRE PAGE : Niveau de risque et indices climatiques
+# =============================================================================
+        
+        # MISE EN FORME DU DOCUMENT        
+        self.pdf_risque.add_page()
+        self.pdf_risque.image(self.logo_cen, 10, 5, 210/10)
         self.titre(self.pdf_risque, risque = True)
-        
-    # =============================================================================
         self.pdf_risque.set_font('Arial', '', 14)
         
+        # NIVEAU DE RISQUE EN DATE DU 
         message_risque = f'Le niveau de risque calculé avec les données du {self.date_sila} est :'
         self.pdf_risque.write(5, message_risque)
         self.pdf_risque.ln(10)
@@ -237,17 +222,18 @@ class AlerteRisqueCourriel():
         self.pdf_risque.set_font('Arial', 'B', 24)
         self.pdf_risque.cell(40, 10, self.niveau_risque, ln = 30)
         
-    # =============================================================================
+        # INDICE CLIM : CUMUL DJD
         self.pdf_risque.set_font('Arial', '', 14)
         self.pdf_risque.ln(20)
-    
+        
         message_cumul = f'Cumul de degrés-jour de dégel depuis le début de la saison le {self.date_degel} :'
         self.pdf_risque.write(5, message_cumul)
         self.pdf_risque.ln(10)
         
         self.pdf_risque.set_font('Arial', 'B', 24)
         self.pdf_risque.cell(40, 10, f'{self.cumul_djd}', ln = 30)
-    # =============================================================================
+        
+        # POURCENTAGE DE VARIATION PRP À L'ANNÉE PRÉCÉDENTE
         self.pdf_risque.set_font('Arial', '', 14)
         self.pdf_risque.ln(20)
     
@@ -257,35 +243,37 @@ class AlerteRisqueCourriel():
         
         self.pdf_risque.set_font('Arial', 'B', 24)
         self.pdf_risque.cell(40, 10, f'{self.variation_cumul} %', ln = 30)
-    # =============================================================================
     
-      # Décommenter ci-bas pour ajouter profondeur de dégel estimé
-# =============================================================================
-#         self.pdf_risque.set_font('Arial', '', 14)
-#         self.pdf_risque.ln(20)
-#     
-#         message_profondeur_degel = 'Profondeur de dégel estimé : '
-#         self.pdf_risque.write(5, message_profondeur_degel)
-#         self.pdf_risque.ln(10)
-#         
-#         self.pdf_risque.set_font('Arial', 'B', 24)
-#         self.pdf_risque.cell(40, 10, f'{self.profondeur_degel} m', ln = 30)
-# =============================================================================
+        # DASHBOARD EN LIGNE
         self.pdf_risque.set_font('Arial', '', 14)
         self.pdf_risque.ln(20)
-
-        message_dashboard = 'Consulter le tableau de bord pour le suivi des indices climatiques et du niveau de risque de glissement de terrain à Salluit :'
+        message_dashboard = 'Consulter les graphiques sur la page suivante ou le tableau de bord pour le suivi des indices climatiques et du niveau de risque de glissement de terrain à Salluit :'
         self.pdf_risque.write(5, message_dashboard)
         self.pdf_risque.ln(10)
         
         self.pdf_risque.set_font('Arial', 'B', 12)
         self.pdf_risque.cell(40, 10, f'{self.url}', ln = 30)
         self.pdf_risque.ln(20)
-    # =============================================================================
+    
+# =============================================================================
+#         # DEUXIÈME PAGE : Graphiques de température de l'air et du cumul DJD
+# =============================================================================
         
+        # ajouter graphique température de l'air des 14 derniers jours + cumul
+        self.pdf_risque.add_page()
+        self.pdf_risque.image(self.graphique_tair, 25, 10, 160)
+        self.pdf_risque.image(self.graphique_cumuldjd, 25, 120, 160)
+
+# =============================================================================
+#         # TROISIÈME PAGE : Statut de transmission de la station SILA et données récentes
+# =============================================================================
+        
+        self.station_sila()
+
+        # Écriture du rapport de 3 pages
         self.ecrire_pdf(self.pdf_risque, self.rapport_niveau_risque)
     
-    def niveau_risque_glissement(self):
+    def alerte_risque_glissement(self):
         """
         Déterminer si le niveau de risque est assez élevé pour envoyer le courriel
         et écriture du statut d'envoi du signal de préalerte et d'alerte.
@@ -371,7 +359,7 @@ if __name__ == '__main__':
     
     repertoire = input('Repertoire de travail du programme : ')
 
-    destinataire = ['sarah.gauthier.1@ulaval.ca', 'landuse@krg.ca']
+    destinataire = ['tappezlecourriel1@', 'tappezlecourriel2@']
     
     alerte = AlerteRisqueCourriel(destinataire, repertoire)
 # =============================================================================

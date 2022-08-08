@@ -40,50 +40,36 @@ repertoire = input('Repertoire de travail du programme : ')
 debut = datetime.now() # Pour calculer la durée d'exécution du programme
 
 # =============================================================================
-# STATION DE SUIVI CLIMATIQUE SILA 
+# RÉCUPÉRATION DES DONNÉES DE TEMPÉRATURE DE L'AIR QUOTIDIENNE - STATION SALLUIT SILA
 # =============================================================================
 print(5*'-', 'Récupération des données de la station Salluit SILA', 5*'-')
 
-# Récupération des données de température de l'air sur le site web du melcc
 donnees = DonneesSila(repertoire)                             
 donnees.donnees_sila()                      # donnees -> objet de la classe DonneesSila
 
+# =============================================================================
+# CALCUL DES INDICES CLIMATIQUES À PARTIR DES NOUVELLES DONNÉES
+# =============================================================================
 if not donnees.nouvelles_lignes.empty:
     print(f'Calcul des indices climatiques à partir des données de la station sila en date du {debut.date()}', 10*'-')
     
-    # Calculs des indices climatiques à partir des données de température de l'air
     indices = IndicesClimatiques(donnees.df_sila, repertoire)   
     indices.calcul_indices('Gel', 'Degel')  # indices -> objet de la classe IndicesClimatiques
 
-# Classe pour déterminer si le niveau de risque nécessite d'envoyer une alerte
-destinataires = ['sarah.gauthier.1@ulaval.ca'] #'landuse@krg.ca', Liste de destinataire du signal d'alerte. Ajouter des adresses courriel au besoin
+# =============================================================================
+# ESTIMATION DU NIVEAU DE RISQUE DE GLISSEMENT DE TERRAIN QUOTIDIEN ET ALERTE SI NÉCESSAIRE
+# =============================================================================
+destinataires = ['email@auchoix.ca'] # Liste de destinataire du signal d'alerte
 alerte = AlerteRisqueCourriel(destinataires, repertoire) # Argument en entrée : à qui envoyer l'alerte
 alerte.generer_rapports()
 print()
 
+# =============================================================================
+# MISE À JOUR DES DONNÉES SUR LE WEB
+# =============================================================================
 print(5*'-', 'Mise à jour des couches Web dans ArcGIS Online', 5*'-')
 web_sila = CoucheWeb('Station SILA', repertoire)
 web_sila.mise_a_jour_couches()
-
-# =============================================================================
-# STATION DE SUIVI THERMIQUE DU PERGÉLISOL
-# =============================================================================
-print(10*'-', 'Récupération des données des stations GN et GS', 10*'-')
-
-station_gn = DonneesPergelisol('Station GN', repertoire) # station_gn -> objet de la classe DonneesPergelisol pour la station gn
-station_gs = DonneesPergelisol('Station GS', repertoire) # station_gs -> objet de la classe DonneesPergelisol pour la station gs
-
-# CONVERSION, NETTOYAGE ET VALIDATION DES VALEURS MESURÉES EN °C
-station_gn.donnees_temperature_sol()
-station_gs.donnees_temperature_sol()
-
-if not station_gn.nouvelles_lignes.empty:
-    web_gn = CoucheWeb('Station GN', repertoire) 
-    web_gn.mise_a_jour_couches()   
-
-if not station_gs.nouvelles_lignes.empty:
-    web_gs = CoucheWeb('Station GS', repertoire) 
-    web_gs.mise_a_jour_couches()  
 
 fin = datetime.now()
 print(Fore.MAGENTA + '\n\n', 'Programme terminé. Durée de l\'exécution du programme : {} secondes.'.format(fin - debut), Style.RESET_ALL)

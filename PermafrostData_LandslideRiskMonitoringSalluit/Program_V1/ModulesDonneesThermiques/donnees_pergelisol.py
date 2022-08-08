@@ -17,7 +17,13 @@ Les données de température du sol moyennes journalières utilisées pour la p�
     et cartographie améliorée du pergélisol dans les communautés nordiques du Nunavik. 
     Rapport final. Québec, Centre d'études nordiques, Université Laval. 
     Récupéré de 
-    
+
+# =============================================================================
+#  CE MODULE EST EN DÉVELOPPEMENT ET DOIT ÊTRE ADAPTÉ EN FONCTION DE LA STATION 
+#  DE SUIVI (CLIMATIQUE, THERMIQUE, ETC.) DONT LES DONNÉES DOIVENT ÊTRE 
+#  RÉCUPÉRÉES ET AUSSI DU TYPE DE DONNÉES À TRAITER. 
+# =============================================================================
+
 """
 
 # Importation des modules nécessaires 

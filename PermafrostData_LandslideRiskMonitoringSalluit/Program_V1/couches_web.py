@@ -13,6 +13,13 @@ pour les stations SILA, GN et GS.
 Une fois les points géoréférencer avec es coordonnées de la station, 
 le DataFrame est enregistré en couche shapefile (.shp) et 
 les données sont mise à jour sur ArcGIS Onlie. 
+
+# =============================================================================
+#  CE MODULE EST EN DÉVELOPPEMENT ET DOIT ÊTRE ADAPTÉ EN FONCTION DE LA STATION 
+#  DE SUIVI (CLIMATIQUE, THERMIQUE, ETC.) DONT LES DONNÉES DOIVENT ÊTRE 
+#  RÉCUPÉRÉES ET PUBLIER. 
+# =============================================================================
+
 """
 
 from datetime import datetime, timedelta

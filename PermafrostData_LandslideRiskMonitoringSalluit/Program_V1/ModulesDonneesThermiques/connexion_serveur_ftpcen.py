@@ -10,6 +10,13 @@ des données journalières.
 
 Accès permanent au serveur FTP-CEN avec un compte de service créé par ValériaScience
 au nom du Centre d'études nordiques.
+
+# =============================================================================
+#  CE MODULE EST EN DÉVELOPPEMENT ET DOIT ÊTRE ADAPTÉ EN FONCTION DE LA STATION 
+#  DE SUIVI (CLIMATIQUE, THERMIQUE, ETC.) DONT LES DONNÉES DOIVENT ÊTRE 
+#  RÉCUPÉRÉES ET AUSSI DU TYPE DE DONNÉES À TRAITER. 
+# =============================================================================
+
 """
 
 import paramiko

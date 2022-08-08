@@ -7,6 +7,13 @@ Le calcul de la profondeur de dégel quotidienne est basé sur le programme
 2D Thermal Regime Vizualisation and Thaw Depth Estimation from Ground Temperatures Timeserie. 
 Programme rédigé avec MATLAB par Emmanuel L'Hérault. Dernière mise à jour en janvier 2021. 
 
+# =============================================================================
+#  CE MODULE EST EN DÉVELOPPEMENT ET DOIT ÊTRE ADAPTÉ EN FONCTION DE LA STATION 
+#  DE SUIVI (CLIMATIQUE, THERMIQUE, ETC.) DONT LES DONNÉES DOIVENT ÊTRE 
+#  RÉCUPÉRÉES ET AUSSI DU TYPE DE DONNÉES À TRAITER. 
+# =============================================================================
+
+
 """
 from datetime import datetime
 import matplotlib.pyplot as plt
@@ -415,17 +422,19 @@ if __name__ == '__main__':
 #   conda install -c conda-forge easygui 
 # =============================================================================
 
-    fichier_sol = easygui.fileopenbox()
-    fichier_sila = easygui.fileopenbox()
+# =============================================================================
+#     fichier_sol = easygui.fileopenbox()
+#     fichier_sila = easygui.fileopenbox()
+# =============================================================================
     station = input('Entrez le nom de la station sans espace : ')
     
     # Si fichier Excel : 
-    df_sol = pd.read_excel(fichier_sol, engine = 'openpyxl')
+# =============================================================================
+#     df_sol = pd.read_excel(fichier_sol, engine = 'openpyxl')
+# =============================================================================
     
     # Si fichier csv
-# =============================================================================
-#     df_sol = pd.read_csv(fichier_sol)
-# =============================================================================
+    df_sol = pd.read_csv(fichier_sol)
     
     df_sila = pd.read_csv(fichier_sila)
     df_sila['Date'] = pd.to_datetime(df_sila['Date']) # bon format de date
